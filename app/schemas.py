@@ -50,7 +50,7 @@ class TicketResponse(BaseModel):
 
 
 class TicketDetailResponse(TicketResponse):
-    queue_id: str
+    queue_id: str | None = None
 
 
 class TicketComplexityUpdate(BaseModel):
