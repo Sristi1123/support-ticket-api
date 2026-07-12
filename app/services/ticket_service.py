@@ -1,3 +1,4 @@
+import queue
 import time
 from sqlalchemy.orm import Session
 
@@ -13,7 +14,7 @@ def create_ticket(db: Session, data: TicketCreateStandalone) -> Ticket:
             raise ValueError("queue_not_found")
         if queue.current_ticket_count + data.quantity > queue.capacity:
             raise ValueError("capacity_exceeded")
-        if queue.current_ticket_count + data.quantity < settings.MAX_TICKETS_PER_QUEUE:
+        if (settings.MAX_TICKETS_PER_QUEUE is not None and queue.current_ticket_count + data.quantity > settings.MAX_TICKETS_PER_QUEUE):
             raise ValueError("capacity_exceeded")
         
         ticket = Ticket(
@@ -40,22 +41,34 @@ def create_ticket(db: Session, data: TicketCreateStandalone) -> Ticket:
 
 def add_ticket_to_queue(db: Session, queue_id: str, data: TicketCreate) -> Ticket:
     queue = db.query(Queue).filter(Queue.id == queue_id).first()
+    print("Queue capacity:", queue.capacity)
+    print("Current count:", queue.current_ticket_count)
+    print("Adding quantity:", data.quantity)
+    print("Max tickets:", settings.MAX_TICKETS_PER_QUEUE)       
     if not queue:
         raise ValueError("queue_not_found")
+
     if queue.current_ticket_count + data.quantity > queue.capacity:
         raise ValueError("capacity_exceeded")
-    if queue.current_ticket_count + data.quantity < settings.MAX_TICKETS_PER_QUEUE:
+
+    if (
+        settings.MAX_TICKETS_PER_QUEUE is not None
+        and queue.current_ticket_count + data.quantity > settings.MAX_TICKETS_PER_QUEUE
+    ):
         raise ValueError("capacity_exceeded")
+
     ticket = Ticket(
         title=data.title,
         complexity=data.complexity,
         queue_id=queue_id,
         quantity=data.quantity,
     )
+
     db.add(ticket)
     queue.current_ticket_count += data.quantity
     db.commit()
     db.refresh(ticket)
+
     return ticket
 
 
