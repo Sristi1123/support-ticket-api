@@ -18,7 +18,7 @@ class QueueResponse(BaseModel):
 
 # --- Ticket ---
 class TicketCreate(BaseModel):
-    title: str
+    title: str = Field(..., min_length=3)
     complexity: int = Field(..., ge=0)  # Allow any non-negative complexity
     quantity: int = Field(..., gt=0)
 
@@ -54,7 +54,7 @@ class TicketDetailResponse(TicketResponse):
 
 
 class TicketComplexityUpdate(BaseModel):
-    complexity: int = Field(..., gt=0)
+    complexity: int = Field(..., ge=0)
 
 
 # --- Queue full view ---

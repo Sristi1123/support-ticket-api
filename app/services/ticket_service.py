@@ -41,12 +41,12 @@ def create_ticket(db: Session, data: TicketCreateStandalone) -> Ticket:
 
 def add_ticket_to_queue(db: Session, queue_id: str, data: TicketCreate) -> Ticket:
     queue = db.query(Queue).filter(Queue.id == queue_id).first()
+    if not queue:
+        raise ValueError("queue_not_found")
     print("Queue capacity:", queue.capacity)
     print("Current count:", queue.current_ticket_count)
     print("Adding quantity:", data.quantity)
     print("Max tickets:", settings.MAX_TICKETS_PER_QUEUE)       
-    if not queue:
-        raise ValueError("queue_not_found")
 
     if queue.current_ticket_count + data.quantity > queue.capacity:
         raise ValueError("capacity_exceeded")
@@ -76,6 +76,15 @@ def bulk_add_tickets(db: Session, queue_id: str, entries: list[TicketBulkEntry])
     queue = db.query(Queue).filter(Queue.id == queue_id).first()
     if not queue:
         raise ValueError("queue_not_found")
+    total_quantity = sum(e.quantity for e in entries)
+    if queue.current_ticket_count + total_quantity > queue.capacity:
+        raise ValueError("capacity_exceeded")
+    if (
+    settings.MAX_TICKETS_PER_QUEUE is not None
+    and queue.current_ticket_count + total_quantity > settings.MAX_TICKETS_PER_QUEUE
+):
+        
+        raise ValueError("capacity_exceeded")
     added = 0
     for e in entries:
         if e.quantity <= 0:
